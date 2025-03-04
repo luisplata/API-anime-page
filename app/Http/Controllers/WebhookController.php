@@ -13,6 +13,12 @@ class WebhookController extends Controller
 {
     public function webhook(Request $request)
     {
+        $secret = env('WEBHOOK_SECRET');
+
+        if ($request->header('X-Webhook-Token') !== $secret) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         try {
             // Validar el JSON entrante
             $data = $request->validate([
