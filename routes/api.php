@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AnimeController;
 use App\Http\Controllers\EpisodeController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -17,4 +18,4 @@ Route::get('/episodes/{anime_slug}-{number}', [EpisodeController::class, 'show']
     ->where('anime_slug', '[a-zA-Z0-9-]+') // Allows slugs with letters, numbers, and dashes
     ->where('number', '[0-9]+'); // Ensures episode number is a number
 
-
+Route::post('/webhook', [WebhookController::class, 'webhook']);
