@@ -32,8 +32,23 @@ class EpisodeController extends Controller
 
     public function show(Request $request, $anime_slug, $number)
     {
-        // Find the anime by slug
-        $anime = Anime::where('slug', $anime_slug)->firstOrFail();
+        // Decode the slug
+        $decodedSlug = urldecode($anime_slug);
+
+        // Replace spaces with hyphens and convert to lowercase
+        $normalizedSlug = strtolower(str_replace(' ', '-', $decodedSlug));
+
+        // Split the slug into words
+        $slugWords = explode('-', $normalizedSlug);
+
+        // Build the query to find the anime whose slug contains all the words
+        $animeQuery = Anime::query();
+        foreach ($slugWords as $word) {
+            $animeQuery->where('slug', 'LIKE', '%' . $word . '%');
+        }
+
+        // Find the anime
+        $anime = $animeQuery->firstOrFail();
 
         // Find the episode by anime_id and episode number
         $episode = Episode::where('anime_id', $anime->id)
@@ -41,7 +56,10 @@ class EpisodeController extends Controller
             ->with('sources')
             ->firstOrFail();
 
-        return response()->json($episode);
+        $response = $episode->toArray();
+        $response['slug'] = $anime_slug;
+
+        return response()->json($response);
     }
 
 }

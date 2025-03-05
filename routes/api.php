@@ -15,7 +15,6 @@ Route::get('/anime/{anime}', [AnimeController::class, 'show']);
 Route::get('/animes/search', [AnimeController::class, 'search']);
 Route::get('/episodes', [EpisodeController::class, 'recent']);
 Route::get('/episodes/{anime_slug}-{number}', [EpisodeController::class, 'show'])
-    ->where('anime_slug', '[a-zA-Z0-9-]+') // Allows slugs with letters, numbers, and dashes
-    ->where('number', '[0-9]+'); // Ensures episode number is a number
-
+    ->where('anime_slug', '[a-zA-Z0-9%\-]+')
+    ->where('number', '[0-9]+');
 Route::post('/webhook', [WebhookController::class, 'webhook']);

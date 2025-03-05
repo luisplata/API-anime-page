@@ -12,14 +12,31 @@ class AnimeController extends Controller
         return Anime::orderBy('created_at', 'desc')->paginate(20);
     }
 
-    public function show(Anime $anime)
+    public function show($anime_slug)
     {
+        // Decodificar el slug
+        $decodedSlug = urldecode($anime_slug);
+
+        // Dividir el slug en palabras
+        $slugWords = explode(' ', $decodedSlug);
+
+        // Construir la consulta para buscar el anime cuyo slug contenga todas las palabras
+        $animeQuery = Anime::query();
+        foreach ($slugWords as $word) {
+            $animeQuery->where('slug', 'LIKE', '%' . $word . '%');
+        }
+
+        // Encontrar el anime
+        $anime = $animeQuery->firstOrFail();
+
+        // Cargar los episodios y sus fuentes
         return $anime->load('episodes.sources');
     }
 
     public function search(Request $request)
     {
         $query = $request->query('q');
+        $perPage = $request->query('per_page', 20); // Default to 20 items per page
 
         if (!$query) {
             return response()->json(['error' => 'Query parameter "q" is required'], 400);
@@ -36,8 +53,8 @@ class AnimeController extends Controller
                 ->orWhere('slug', 'LIKE', "%{$word}%");
         }
 
-        // Get unique results
-        $results = $animes->get()->unique('id')->values();
+        // Get paginated results
+        $results = $animes->paginate($perPage);
 
         return response()->json($results);
     }
