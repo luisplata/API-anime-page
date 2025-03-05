@@ -8,6 +8,7 @@ use App\Models\EpisodeSource;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class WebhookController extends Controller
 {
@@ -22,51 +23,69 @@ class WebhookController extends Controller
         try {
             // Validar el JSON entrante
             $data = $request->validate([
-                'name' => 'required|array',
-                'slug' => 'required|string|unique:animes,slug',
-                'description' => 'nullable|string',
-                'image' => 'nullable|url',
-                'episodes' => 'required|array',
-                'episodes.*.title' => 'required|string',
-                'episodes.*.number' => 'required|integer',
-                'episodes.*.source' => 'required|array',
-                'episodes.*.source.*.name' => 'required|string',
-                'episodes.*.source.*.url' => 'required|url'
+                '*.name' => 'required|array',
+                '*.slug' => 'required|string',
+                '*.description' => 'nullable|string',
+                '*.image' => 'nullable|url',
+                '*.caps' => 'required|array',
+                '*.caps.*.title' => 'required|string',
+                '*.caps.*.number' => 'required|integer',
+                '*.caps.*.link' => 'required|string',
+                '*.caps.*.source' => 'required|array',
+                '*.caps.*.source.*.name' => 'required|string',
+                '*.caps.*.source.*.url' => ['required', 'regex:/^https?:\/\/[^\s$.?#].[^\s]*$/i']
             ]);
 
-            // Convertir `name` en un string concatenado
-            $animeTitle = implode(" ", $data['name']);
+            foreach ($data as $animeData) {
+                // Convertir `name` en un string concatenado
+                $animeTitle = implode(" ", $animeData['name']);
 
-            // Crear o actualizar Anime
-            $anime = Anime::updateOrCreate(
-                ['slug' => $data['slug']],
-                [
-                    'title' => $animeTitle,
-                    'description' => $data['description'],
-                    'image' => $data['image']
-                ]
-            );
-
-            // Procesar cada episodio
-            foreach ($data['episodes'] as $ep) {
-                $episode = Episode::updateOrCreate(
-                    ['anime_id' => $anime->id, 'number' => $ep['number']],
-                    ['title' => $ep['title']]
+                // Solo crear si no existe
+                $anime = Anime::firstOrCreate(
+                    ['slug' => $animeData['slug']],
+                    [
+                        'title' => $animeTitle,
+                        'description' => $animeData['description'],
+                        'image' => $animeData['image']
+                    ]
                 );
 
-                // Procesar cada fuente de video
-                foreach ($ep['source'] as $src) {
-                    EpisodeSource::updateOrCreate(
-                        ['episode_id' => $episode->id, 'quality' => $src['name']], // `name` se guarda en `quality`
-                        ['url' => $src['url']]
+                foreach ($animeData['caps'] as $episodeData) {
+                    // Solo crear si no existe
+                    $episode = Episode::firstOrCreate(
+                        [
+                            'anime_id' => $anime->id,
+                            'number' => $episodeData['number']
+                        ],
+                        [
+                            'title' => $episodeData['title'],
+                            'link' => $episodeData['link']
+                        ]
                     );
+
+                    foreach ($episodeData['source'] as $sourceData) {
+                        Log::info('Processing source data', ['name' => $sourceData['name'], 'url' => $sourceData['url']]);
+
+                        // Solo crear si no existe
+                        EpisodeSource::firstOrCreate(
+                            [
+                                'episode_id' => $episode->id,
+                                'name' => $sourceData['name']
+                            ],
+                            [
+                                'url' => $sourceData['url']
+                            ]
+                        );
+                    }
                 }
             }
 
             return response()->json(['message' => 'Anime y episodios guardados exitosamente'], 200);
+        } catch (ValidationException $e) {
+            return response()->json(['error' => 'Validation Error', 'messages' => $e->errors()], 422);
         } catch (Exception $e) {
-            Log::error('Error al procesar webhook: ' . $e->getMessage());
-            return response()->json(['error' => 'Error al procesar los datos'], 500);
+            Log::error('Error processing webhook: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
         }
     }
 }

@@ -9,7 +9,12 @@ class EpisodeSource extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['episode_id', 'quality', 'url'];
+    protected $fillable = ['episode_id', 'quality', 'url', 'name'];
+
+    protected $attributes = [
+        'name' => 'external',
+        'quality' => 'HD',
+    ];
 
     // Relationship with Episode (Many Sources belong to One Episode)
     public function episode()
