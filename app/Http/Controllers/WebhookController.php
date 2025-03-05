@@ -50,6 +50,10 @@ class WebhookController extends Controller
                     ]
                 );
 
+                if (str_contains($animeData['image'], 'covers') || empty($anime->image)) {
+                    $anime->update(['image' => $animeData['image']]);
+                }
+
                 foreach ($animeData['caps'] as $episodeData) {
                     // Solo crear si no existe
                     $episode = Episode::firstOrCreate(
