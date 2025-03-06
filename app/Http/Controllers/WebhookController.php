@@ -36,8 +36,6 @@ class WebhookController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $isCompleteSeries = $this->parseStringToBool($request->header('X-Webhook-Series')) ?? false;
-
         try {
             // Validar el JSON entrante
             $data = $request->validate([
@@ -72,13 +70,7 @@ class WebhookController extends Controller
                     $anime->update(['image' => $animeData['image']]);
                 }
 
-                if ($isCompleteSeries) {
-                    $createdAt = now()->subWeek();
-                    Log::info("Is true? isCompleteSeries==True Yes");
-                } else {
-                    $createdAt = now();
-                    Log::info("Is true? isCompleteSeries==True No");
-                }
+                $isAnimeNew = $anime->wasRecentlyCreated;
 
                 foreach ($animeData['caps'] as $episodeData) {
                     // Solo crear si no existe
@@ -94,7 +86,7 @@ class WebhookController extends Controller
                     );
 
                     $episode->update([
-                        'published_at' => $createdAt
+                        'published_at' => $isAnimeNew ? now()->subWeek() : now()
                     ]);
 
                     foreach ($episodeData['source'] as $sourceData) {
