@@ -73,12 +73,10 @@ class WebhookController extends Controller
                 }
 
                 if ($isCompleteSeries) {
-                    $createdAt = now()->subWeek()->startOfDay();
+                    $createdAt = now()->subWeek();
                 } else {
                     $createdAt = now();
                 }
-
-                Log::info("Created to anime " . $anime->title . " with flag" . $isCompleteSeries . " is " . $createdAt->format('Y-m-d H:i:s'));
 
                 foreach ($animeData['caps'] as $episodeData) {
                     // Solo crear si no existe
@@ -90,10 +88,13 @@ class WebhookController extends Controller
                         [
                             'title' => $episodeData['title'],
                             'link' => $episodeData['link'],
-                            'created_at' => $createdAt,
-                            'updated_at' => $createdAt
                         ]
                     );
+
+                    $episode->update([
+                        'created_at' => $createdAt,
+                        'updated_at' => $createdAt
+                    ]);
 
                     foreach ($episodeData['source'] as $sourceData) {
                         // Solo crear si no existe
