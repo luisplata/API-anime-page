@@ -1,43 +1,124 @@
-name: Deploy App
+name: CI/CD Pipeline
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
   push:
     branches:
       - main
+
 jobs:
-  deploy:
+  # 🔹 PREPARACIÓN
+  prepare:
     runs-on: ubuntu-latest
 
-    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer, phpunit
+          extensions: mbstring, pdo, pdo_mysql
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Upload vendor folder
+        uses: actions/upload-artifact@v3
+        with:
+          name: vendor
+          path: vendor/
+
+  # 🔹 EJECUCIÓN DE TESTS
+  test:
+    needs: prepare
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: testing
+          MYSQL_USER: user
+          MYSQL_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --host=localhost --user=root --password=root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Execute SSH commands
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USER }}
-        password: ${{ secrets.SSH_PASSWORD }}
-        port: ${{ secrets.SSH_PORT }}
-        script: |
-          APP_DIR=$HOME/${{ secrets.APP_DIR }}
-          cd $APP_DIR
-          LOG_FILE="$APP_DIR/deployment_$(date '+%Y-%m-%d_%H-%M-%S').log"
-          {
-            git pull origin main &&
-            composer install &&
-            composer update &&
-            php artisan migrate &&
-            php artisan route:clear &&
-            php artisan route:cache &&
-            php artisan view:clear &&
-            php artisan view:cache &&
-            php artisan config:cache &&
-            php artisan config:clear &&
-            php artisan cache:clear
-          } > $LOG_FILE 2>&1 || {
-            echo "An error occurred during deployment. See $LOG_FILE for details."
-          }
+      - name: Download vendor folder
+        uses: actions/download-artifact@v3
+        with:
+          name: vendor
+          path: vendor/
+
+      - name: Set up environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          echo "DB_CONNECTION=mysql" >> .env
+          echo "DB_HOST=127.0.0.1" >> .env
+          echo "DB_PORT=3306" >> .env
+          echo "DB_DATABASE=testing" >> .env
+          echo "DB_USERNAME=user" >> .env
+          echo "DB_PASSWORD=password" >> .env
+
+      - name: Wait for MySQL to be ready
+        run: sleep 15
+
+      - name: Run migrations
+        run: php artisan migrate --env=testing --force
+
+      - name: Run PHPUnit tests
+        run: vendor/bin/phpunit --log-junit test-report.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-report
+          path: test-report.xml
+
+  # 🔹 DEPLOY
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Execute SSH commands
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            APP_DIR=$HOME/${{ secrets.APP_DIR }}
+            cd $APP_DIR
+            LOG_FILE="$APP_DIR/deployment_$(date '+%Y-%m-%d_%H-%M-%S').log"
+            {
+              git pull origin main &&
+              composer install --no-interaction --prefer-dist &&
+              php artisan migrate --force &&
+              php artisan route:clear &&
+              php artisan route:cache &&
+              php artisan view:clear &&
+              php artisan view:cache &&
+              php artisan config:cache &&
+              php artisan config:clear &&
+              php artisan cache:clear
+            } > $LOG_FILE 2>&1 || {
+              echo "An error occurred during deployment. See $LOG_FILE for details."
+            }
