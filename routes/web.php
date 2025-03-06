@@ -2,4 +2,4 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', 'https://animebell.peryloth.com/', 301);
+Route::redirect('/', env("url_front"), 301);
