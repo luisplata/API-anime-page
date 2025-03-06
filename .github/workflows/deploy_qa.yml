@@ -1,0 +1,40 @@
+name: Deploy to QA
+
+on:
+  push:
+    branches:
+      - main
+      - qa
+  workflow_dispatch: {}
+
+jobs:
+  deploy-qa:
+    runs-on: ubuntu-latest
+    environment: QA  # Usa los secretos específicos de QA si existen
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Execute SSH commands on QA Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            APP_DIR=$HOME/${{ secrets.APP_DIR }}
+            cd $APP_DIR
+            LOG_FILE="$APP_DIR/deployment_$(date '+%Y-%m-%d_%H-%M-%S').log"
+            {
+              git pull origin main &&
+              composer install --no-interaction --prefer-dist &&
+              php artisan migrate --force &&
+              php artisan config:clear &&
+              php artisan config:cache &&
+              php artisan cache:clear &&
+              php artisan queue:restart
+            } > $LOG_FILE 2>&1 || {
+              echo "An error occurred during deployment. See $LOG_FILE for details."
+            }
