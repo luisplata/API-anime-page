@@ -85,11 +85,12 @@ class WebhookController extends Controller
                         ]
                     );
 
+                    $publishedAt = $isAnimeNew ? now()->subWeek() : now();
                     $episode->update([
-                        'published_at' => $isAnimeNew ? now()->subWeek() : now()
+                        'published_at' => $publishedAt
                     ]);
 
-                    Log::info('Published at ' . ($isAnimeNew ? now()->subWeek() : now()));
+                    Log::info('Published at ' . $publishedAt);
 
                     foreach ($episodeData['source'] as $sourceData) {
                         // Solo crear si no existe
