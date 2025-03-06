@@ -12,7 +12,7 @@ class EpisodeController extends Controller
     public function recent()
     {
         return Episode::with(['sources', 'anime:id,slug,title,image']) // Load extra anime details
-        ->orderBy('created_at', 'desc')
+        ->orderBy('published_at', 'desc')
             ->paginate(20) // Paginate results (10 per page)
             ->through(function ($episode) {
                 return [

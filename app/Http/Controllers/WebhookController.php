@@ -74,8 +74,10 @@ class WebhookController extends Controller
 
                 if ($isCompleteSeries) {
                     $createdAt = now()->subWeek();
+                    Log::info("Is true? isCompleteSeries==True Yes");
                 } else {
                     $createdAt = now();
+                    Log::info("Is true? isCompleteSeries==True No");
                 }
 
                 foreach ($animeData['caps'] as $episodeData) {
@@ -87,13 +89,12 @@ class WebhookController extends Controller
                         ],
                         [
                             'title' => $episodeData['title'],
-                            'link' => $episodeData['link'],
+                            'link' => $episodeData['link']
                         ]
                     );
 
                     $episode->update([
-                        'created_at' => $createdAt,
-                        'updated_at' => $createdAt
+                        'published_at' => $createdAt
                     ]);
 
                     foreach ($episodeData['source'] as $sourceData) {
