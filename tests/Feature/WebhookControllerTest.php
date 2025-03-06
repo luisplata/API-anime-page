@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Anime;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use Illuminate\Foundation\Testing\TestCase;
 
 class WebhookControllerTest extends TestCase
 {
