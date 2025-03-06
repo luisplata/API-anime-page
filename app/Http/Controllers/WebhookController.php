@@ -69,9 +69,10 @@ class WebhookController extends Controller
                 if (str_contains($animeData['image'], 'covers') || empty($anime->image)) {
                     $anime->update(['image' => $animeData['image']]);
                 }
+                Log::info("Anime was recently created: " . ($anime->wasRecentlyCreated ? 'true' : 'false'));
 
                 $isAnimeNew = $anime->wasRecentlyCreated;
-                Log::info("isAnimeNew value: {$isAnimeNew}");
+                Log::info("isAnimeNew value: " . ($isAnimeNew ? 'true' : 'false'));
 
                 foreach ($animeData['caps'] as $episodeData) {
                     // Solo crear si no existe
