@@ -73,7 +73,7 @@ class WebhookController extends Controller
                 }
 
                 if ($isCompleteSeries) {
-                    $createdAt = now()->subWeek();
+                    $createdAt = now()->subWeek()->startOfDay();
                 } else {
                     $createdAt = now();
                 }
