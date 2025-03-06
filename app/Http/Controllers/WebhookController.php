@@ -12,6 +12,22 @@ use Illuminate\Validation\ValidationException;
 
 class WebhookController extends Controller
 {
+    private function parseStringToBool($string)
+    {
+        $trueValues = ['true', '1', 'yes', 'on'];
+        $falseValues = ['false', '0', 'no', 'off'];
+
+        $string = strtolower(trim($string));
+
+        if (in_array($string, $trueValues, true)) {
+            return true;
+        } elseif (in_array($string, $falseValues, true)) {
+            return false;
+        }
+
+        return null; // or throw an exception if the value is not recognized
+    }
+
     public function webhook(Request $request)
     {
         $secret = env('WEBHOOK_SECRET');
@@ -19,6 +35,8 @@ class WebhookController extends Controller
         if ($request->header('X-Webhook-Token') !== $secret) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
+
+        $isCompleteSeries = $this->parseStringToBool($request->header('X-Webhook-Series')) ?? false;
 
         try {
             // Validar el JSON entrante
@@ -54,6 +72,12 @@ class WebhookController extends Controller
                     $anime->update(['image' => $animeData['image']]);
                 }
 
+                if ($isCompleteSeries) {
+                    $createdAt = now()->subWeek();
+                } else {
+                    $createdAt = now();
+                }
+
                 foreach ($animeData['caps'] as $episodeData) {
                     // Solo crear si no existe
                     $episode = Episode::firstOrCreate(
@@ -63,7 +87,8 @@ class WebhookController extends Controller
                         ],
                         [
                             'title' => $episodeData['title'],
-                            'link' => $episodeData['link']
+                            'link' => $episodeData['link'],
+                            'created_at' => $createdAt
                         ]
                     );
 
