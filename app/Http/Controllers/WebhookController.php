@@ -95,8 +95,6 @@ class WebhookController extends Controller
                     );
 
                     foreach ($episodeData['source'] as $sourceData) {
-                        Log::info('Processing source data', ['name' => $sourceData['name'], 'url' => $sourceData['url']]);
-
                         // Solo crear si no existe
                         EpisodeSource::firstOrCreate(
                             [
