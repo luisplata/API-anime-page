@@ -78,6 +78,8 @@ class WebhookController extends Controller
                     $createdAt = now();
                 }
 
+                Log::info("Created to anime ".$anime->title." is ".$createdAt->format('Y-m-d H:i:s'));
+
                 foreach ($animeData['caps'] as $episodeData) {
                     // Solo crear si no existe
                     $episode = Episode::firstOrCreate(
