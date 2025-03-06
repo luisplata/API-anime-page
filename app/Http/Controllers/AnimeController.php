@@ -54,8 +54,6 @@ class AnimeController extends Controller
             // Calcular el porcentaje de coincidencia
             $matchPercentage = $totalWords > 0 ? ($matches / $totalWords) : 0;
 
-            Log::info("Comparando con: " . $anime->slug . " - Coincidencia: " . $matchPercentage);
-
             // Verificar si supera el umbral y es la mejor coincidencia hasta ahora
             if ($matchPercentage >= $threshold && $matchPercentage > $bestScore) {
                 $bestScore = $matchPercentage;
@@ -138,8 +136,6 @@ class AnimeController extends Controller
 
             // Calcular el porcentaje de coincidencia basado en slug y título
             $matchPercentage = $totalWords > 0 ? (($slugMatches + $titleMatches) / $totalWords) : 0;
-
-            Log::info("Comparando con: " . $anime->slug . " - Coincidencia: " . $matchPercentage);
 
             // Solo agregar si tiene algún nivel de coincidencia
             if ($matchPercentage > 0) {
