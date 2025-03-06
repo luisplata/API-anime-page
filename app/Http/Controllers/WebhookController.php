@@ -56,22 +56,28 @@ class WebhookController extends Controller
                 // Convertir `name` en un string concatenado
                 $animeTitle = implode(" ", $animeData['name']);
 
-                // Solo crear si no existe
-                $anime = Anime::firstOrCreate(
-                    ['slug' => $animeData['slug']],
-                    [
+                // Verificar si el anime ya existe
+                $existingAnime = Anime::where('slug', $animeData['slug'])->first();
+
+                if ($existingAnime) {
+                    Log::info("Anime already exists with slug: {$animeData['slug']}");
+                    $anime = $existingAnime;
+                    $isAnimeNew = false;
+                } else {
+                    // Crear el anime si no existe
+                    $anime = Anime::create([
+                        'slug' => $animeData['slug'],
                         'title' => $animeTitle,
                         'description' => $animeData['description'],
                         'image' => $animeData['image']
-                    ]
-                );
+                    ]);
+                    $isAnimeNew = true;
+                }
 
                 if (str_contains($animeData['image'], 'covers') || empty($anime->image)) {
                     $anime->update(['image' => $animeData['image']]);
                 }
-                Log::info("Anime was recently created: " . ($anime->wasRecentlyCreated ? 'true' : 'false'));
 
-                $isAnimeNew = $anime->wasRecentlyCreated;
                 Log::info("isAnimeNew value: " . ($isAnimeNew ? 'true' : 'false'));
 
                 foreach ($animeData['caps'] as $episodeData) {
@@ -87,12 +93,12 @@ class WebhookController extends Controller
                         ]
                     );
 
-                    $publishedAt = $this->parseStringToBool($isAnimeNew) ? now()->subWeek() : now();
+                    $publishedAt = $isAnimeNew ? now()->subWeek() : now();
                     $episode->update([
                         'published_at' => $publishedAt
                     ]);
 
-                    Log::info("is new? {$isAnimeNew} Published at " . $publishedAt);
+                    Log::info("is new? {$isAnimeNew} Published at {$publishedAt}");
 
                     foreach ($episodeData['source'] as $sourceData) {
                         // Solo crear si no existe
