@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
+use Faker\Factory as FakerFactory;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Anime>
@@ -17,7 +18,10 @@ class AnimeFactory extends Factory
      */
     public function definition(): array
     {
-        $title = $this->faker->unique()->sentence(4, true); // Generate a unique title
+
+        $faker = FakerFactory::create();
+        $title = implode(' ', $faker->unique()->words(4));
+
 
         return [
             'title' => ucfirst($title),

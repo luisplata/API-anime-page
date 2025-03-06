@@ -10,8 +10,7 @@ class AnimeControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
-    public function it_returns_paginated_anime_list()
+    public function test_it_returns_paginated_anime_list()
     {
         Anime::factory()->count(30)->create();
 
@@ -24,8 +23,7 @@ class AnimeControllerTest extends TestCase
             ->assertJsonCount(20, 'data');
     }
 
-    /** @test */
-    public function it_returns_anime_by_slug()
+    public function test_it_returns_anime_by_slug()
     {
         $anime = Anime::factory()->create(['slug' => 'one-piece']);
 
@@ -35,8 +33,7 @@ class AnimeControllerTest extends TestCase
             ->assertJsonFragment(['slug' => 'one-piece']);
     }
 
-    /** @test */
-    public function it_returns_empty_response_for_invalid_slug()
+    public function test_it_returns_empty_response_for_invalid_slug()
     {
         $response = $this->getJson('/api/anime/non-existent-anime');
 
@@ -44,8 +41,7 @@ class AnimeControllerTest extends TestCase
             ->assertJsonFragment(['id' => null]);
     }
 
-    /** @test */
-    public function it_returns_search_results_sorted_by_relevance()
+    public function test_it_returns_search_results_sorted_by_relevance()
     {
         $anime1 = Anime::factory()->create(['title' => 'Attack on Titan']);
         $anime2 = Anime::factory()->create(['title' => 'Titan boku no Quest']);

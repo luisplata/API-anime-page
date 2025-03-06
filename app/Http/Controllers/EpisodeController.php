@@ -4,15 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Anime;
 use App\Models\Episode;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 
 class EpisodeController extends Controller
 {
 
+    use RefreshDatabase;
+
     public function recent()
     {
         return Episode::with(['sources', 'anime:id,slug,title,image']) // Load extra anime details
-            ->orderBy('published_at', 'desc')
+        ->orderBy('published_at', 'desc')
             ->paginate(20) // Paginate results (10 per page)
             ->through(function ($episode) {
                 return [
