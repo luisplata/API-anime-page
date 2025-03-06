@@ -17,7 +17,7 @@ class AnimeFactory extends Factory
      */
     public function definition(): array
     {
-        $title = $this->faker->unique()->words(3, true); // Generate a unique title
+        $title = $this->faker->unique()->sentence(4, true); // Generate a unique title
 
         return [
             'title' => ucfirst($title),
