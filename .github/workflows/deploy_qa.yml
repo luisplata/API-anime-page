@@ -27,7 +27,8 @@ jobs:
             cd $APP_DIR
             LOG_FILE="$APP_DIR/deployment_$(date '+%Y-%m-%d_%H-%M-%S').log"
             {
-              git pull origin main &&
+              git checkout qa &&
+              git pull origin qa &&
               composer install --no-interaction --prefer-dist &&
               php artisan migrate:fresh --seed &&
               php artisan config:clear &&
