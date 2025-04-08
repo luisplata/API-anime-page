@@ -31,8 +31,8 @@ jobs:
               git pull origin qa &&
               composer install --no-interaction --prefer-dist &&
               php artisan migrate:fresh --seed &&
-              php artisan config:clear &&
               php artisan config:cache &&
+              php artisan config:clear &&
               php artisan cache:clear &&
               php artisan queue:restart
             } > $LOG_FILE 2>&1 || {
