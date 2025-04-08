@@ -4,6 +4,7 @@ use App\Http\Controllers\AnimeController;
 use App\Http\Controllers\EpisodeController;
 use App\Http\Controllers\LastPaginationController;
 use App\Http\Controllers\WebhookController;
+use App\Http\Middleware\VerifyWebhookToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -24,5 +25,5 @@ Route::prefix('webhook')->group(function () {
     Route::get('/last-pagination/{type}', [LastPaginationController::class, 'show']);
     Route::post('/send-animes-today', [WebhookController::class, 'sendAnimeToday']);
     Route::post('/send-anime-full', [WebhookController::class, 'sendAnimeFull']);
-});
+})->middleware(VerifyWebhookToken::class);
 
