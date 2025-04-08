@@ -31,13 +31,14 @@ class AnimeController extends Controller
         $lastWord = end($slugWords);
 
         // Filtrar primero por la primera o última palabra en el slug
-        $filteredAnimes = Anime::where('slug', 'LIKE', "%{$firstWord}%")
+        $filteredAnimes = Anime::where('slug', 'LIKE', "%{$cleanSlug}%")
+            ->orWhere('slug', 'LIKE', "%{$firstWord}%")
             ->orWhere('slug', 'LIKE', "%{$lastWord}%")
             ->get();
 
         $bestMatch = null;
         $bestScore = 0;
-        $threshold = 0.7; // 70% de coincidencia
+        $threshold = 0.3; // 20% de coincidencia
 
         Log::info("firstWord::" . $firstWord);
         Log::info("lastWord::" . $lastWord);
