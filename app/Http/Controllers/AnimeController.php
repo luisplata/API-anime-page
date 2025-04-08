@@ -17,48 +17,25 @@ class AnimeController extends Controller
 
     public function show($anime_slug)
     {
-        // Decodificar el slug y limpiar caracteres especiales (reemplazándolos por espacios)
         $decodedSlug = urldecode($anime_slug);
+
+        // Limpiamos el slug recibido
         $cleanSlug = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $decodedSlug);
-        $slugWords = array_filter(explode(' ', trim($cleanSlug)));
+        $cleanSlug = trim(preg_replace('/\s+/', ' ', $cleanSlug)); // Eliminamos espacios duplicados
 
-        if (empty($slugWords)) {
-            return response()->json($this->emptyAnimeResponse(), 200);
-        }
-
-        // Tomar la primera y última palabra del slug para hacer una consulta más eficiente
-        $firstWord = $slugWords[0];
-        $lastWord = end($slugWords);
-
-        // Filtrar primero por la primera o última palabra en el slug
-        $filteredAnimes = Anime::where('slug', 'LIKE', "%{$cleanSlug}%")
-            ->orWhere('slug', 'LIKE', "%{$firstWord}%")
-            ->orWhere('slug', 'LIKE', "%{$lastWord}%")
-            ->get();
+        // Obtenemos todos los animes
+        $animes = Anime::all();
 
         $bestMatch = null;
-        $bestScore = 0;
-        $threshold = 0.3; // 20% de coincidencia
 
-        Log::info("firstWord::" . $firstWord);
-        Log::info("lastWord::" . $lastWord);
+        foreach ($animes as $anime) {
+            // Limpiamos el slug de la base de datos
+            $dbCleanSlug = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $anime->slug);
+            $dbCleanSlug = trim(preg_replace('/\s+/', ' ', $dbCleanSlug));
 
-        foreach ($filteredAnimes as $anime) {
-            // Limpiar también el slug en la base de datos antes de comparar (reemplazando caracteres especiales por espacios)
-            $cleanAnimeSlug = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $anime->slug);
-            $animeWords = array_filter(explode(' ', trim($cleanAnimeSlug)));
-
-            // Contar palabras coincidentes
-            $matches = count(array_intersect($slugWords, $animeWords));
-            $totalWords = count($slugWords);
-
-            // Calcular el porcentaje de coincidencia
-            $matchPercentage = $totalWords > 0 ? ($matches / $totalWords) : 0;
-
-            // Verificar si supera el umbral y es la mejor coincidencia hasta ahora
-            if ($matchPercentage >= $threshold && $matchPercentage > $bestScore) {
-                $bestScore = $matchPercentage;
+            if (strtolower($cleanSlug) === strtolower($dbCleanSlug)) {
                 $bestMatch = $anime;
+                break;
             }
         }
 
@@ -66,7 +43,6 @@ class AnimeController extends Controller
             return response()->json($this->emptyAnimeResponse(), 404);
         }
 
-        // Cargar los episodios y sus fuentes
         return $bestMatch->load('episodes.sources');
     }
 
