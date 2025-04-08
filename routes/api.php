@@ -20,10 +20,10 @@ Route::get('/episodes/{anime_slug}-{number}', [EpisodeController::class, 'show']
     ->where('anime_slug', '[a-zA-Z0-9%\-]+')
     ->where('number', '[0-9]+');
 
-Route::prefix('webhook')->group(function () {
+Route::middleware(VerifyWebhookToken::class)->prefix('webhook')->group(function () {
     Route::post('/last-pagination', [LastPaginationController::class, 'store']);
     Route::get('/last-pagination/{type}', [LastPaginationController::class, 'show']);
     Route::post('/send-animes-today', [WebhookController::class, 'sendAnimeToday']);
     Route::post('/send-anime-full', [WebhookController::class, 'sendAnimeFull']);
-})->middleware(VerifyWebhookToken::class);
+});
 
