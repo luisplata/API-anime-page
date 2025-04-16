@@ -6,7 +6,6 @@ use App\Models\AnonymousClient;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class TrackClientUUID
 {
@@ -17,10 +16,9 @@ class TrackClientUUID
      */
     public function handle(Request $request, Closure $next)
     {
-        $uuid = $request->cookie('client_uuid');
+        $uuid = $request->header('X-Client-UUID');
 
         Log::info("UUID: $uuid");
-        Log::info('Request Origin: ' . request()->header('Origin'));
 
         if ($uuid) {
             // Buscar o crear el cliente anónimo
