@@ -20,6 +20,7 @@ class TrackClientUUID
         $uuid = $request->cookie('client_uuid');
 
         Log::info("UUID: $uuid");
+        Log::info('Request Origin: ' . request()->header('Origin'));
 
         if ($uuid) {
             // Buscar o crear el cliente anónimo
