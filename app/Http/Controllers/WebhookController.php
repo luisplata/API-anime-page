@@ -49,15 +49,32 @@ class WebhookController extends Controller
     {
         foreach ($data as $animeData) {
             $animeTitle = implode(" ", $animeData['name']);
-            $anime = Anime::firstOrCreate(
-                ['slug' => $animeData['slug']],
-                [
+            $slug = $animeData['slug'];
+
+            // Buscar por slug o por título
+            $anime = Anime::where('slug', $slug)
+                ->orWhere('title', $animeTitle)
+                ->first();
+
+            if ($anime) {
+                // Si existe, lo actualizamos
+                $anime->update([
+                    'slug' => $slug, // Por si cambió el slug
                     'title' => $animeTitle,
                     'description' => $animeData['description'],
                     'image' => $animeData['image']
-                ]
-            );
+                ]);
+            } else {
+                // Si no existe, lo creamos
+                $anime = Anime::create([
+                    'slug' => $slug,
+                    'title' => $animeTitle,
+                    'description' => $animeData['description'],
+                    'image' => $animeData['image']
+                ]);
+            }
 
+            // Si la imagen actual es vacía o viene de 'covers', la actualizamos
             if (str_contains($animeData['image'], 'covers') || empty($anime->image)) {
                 $anime->update(['image' => $animeData['image']]);
             }
