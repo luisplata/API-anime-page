@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\AnonymousClient;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class TrackClientUUID
@@ -17,6 +18,8 @@ class TrackClientUUID
     public function handle(Request $request, Closure $next)
     {
         $uuid = $request->cookie('client_uuid');
+
+        Log::info("UUID: $uuid");
 
         if ($uuid) {
             // Buscar o crear el cliente anónimo
