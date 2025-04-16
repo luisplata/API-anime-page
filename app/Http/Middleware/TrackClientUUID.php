@@ -18,7 +18,7 @@ class TrackClientUUID
     {
         $uuid = $request->cookie('client_uuid');
 
-        if ($uuid && Str::isUuid($uuid)) {
+        if ($uuid) {
             // Buscar o crear el cliente anónimo
             $client = AnonymousClient::firstOrCreate(
                 ['id' => $uuid],
