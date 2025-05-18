@@ -87,10 +87,10 @@ class AnimeController extends Controller
         $lastWord = end($queryWords);
 
         // Filtrar los animes que contienen al menos una coincidencia en el slug o el título
-        $filteredAnimes = Anime::where('slug', 'LIKE', "%{$firstWord}%")
-            ->orWhere('slug', 'LIKE', "%{$lastWord}%")
-            ->orWhere('title', 'LIKE', "%{$firstWord}%")
-            ->orWhere('title', 'LIKE', "%{$lastWord}%")
+        $filteredAnimes = Anime::whereRaw('LOWER(slug) LIKE ?', ['%' . strtolower($firstWord) . '%'])
+            ->orWhereRaw('LOWER(slug) LIKE ?', ['%' . strtolower($lastWord) . '%'])
+            ->orWhereRaw('LOWER(title) LIKE ?', ['%' . strtolower($firstWord) . '%'])
+            ->orWhereRaw('LOWER(title) LIKE ?', ['%' . strtolower($lastWord) . '%'])
             ->get();
 
         // Array para almacenar los resultados con su puntaje
@@ -144,7 +144,4 @@ class AnimeController extends Controller
 
         return response()->json($paginatedResults);
     }
-
-
-
 }
