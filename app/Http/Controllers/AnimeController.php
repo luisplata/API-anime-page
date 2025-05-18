@@ -82,15 +82,18 @@ class AnimeController extends Controller
             return response()->json([], 200);
         }
 
+        // Limpiar y pasar a minúsculas las palabras de la query SOLO UNA VEZ
+        $queryWords = array_map('mb_strtolower', $queryWords);
+
         // Obtener la primera y última palabra para filtrar inicialmente
         $firstWord = $queryWords[0];
         $lastWord = end($queryWords);
 
         // Filtrar los animes que contienen al menos una coincidencia en el slug o el título
-        $filteredAnimes = Anime::where('slug', 'LIKE', "%{$firstWord}%")
-            ->orWhere('slug', 'LIKE', "%{$lastWord}%")
-            ->orWhere('title', 'LIKE', "%{$firstWord}%")
-            ->orWhere('title', 'LIKE', "%{$lastWord}%")
+        $filteredAnimes = Anime::whereRaw('LOWER(slug) LIKE ?', ['%' . $firstWord . '%'])
+            ->orWhereRaw('LOWER(slug) LIKE ?', ['%' . $lastWord . '%'])
+            ->orWhereRaw('LOWER(title) LIKE ?', ['%' . $firstWord . '%'])
+            ->orWhereRaw('LOWER(title) LIKE ?', ['%' . $lastWord . '%'])
             ->get();
 
         // Array para almacenar los resultados con su puntaje
@@ -99,10 +102,10 @@ class AnimeController extends Controller
         foreach ($filteredAnimes as $anime) {
             // Limpiar también el slug y título en la base de datos antes de comparar
             $cleanAnimeSlug = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $anime->slug);
-            $animeSlugWords = array_filter(explode(' ', trim($cleanAnimeSlug)));
+            $animeSlugWords = array_map('mb_strtolower', array_filter(explode(' ', trim($cleanAnimeSlug))));
 
             $cleanAnimeTitle = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $anime->title);
-            $animeTitleWords = array_filter(explode(' ', trim($cleanAnimeTitle)));
+            $animeTitleWords = array_map('mb_strtolower', array_filter(explode(' ', trim($cleanAnimeTitle))));
 
             // Contar coincidencias en slug y título
             $slugMatches = count(array_intersect($queryWords, $animeSlugWords));
@@ -144,7 +147,4 @@ class AnimeController extends Controller
 
         return response()->json($paginatedResults);
     }
-
-
-
 }
