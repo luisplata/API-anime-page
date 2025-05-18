@@ -47,13 +47,14 @@ class WebhookController extends Controller
 
     private function saveAnime(array $data, bool $isAnimeNew)
     {
+        Log::info('Guardando animes', ['data' => $data]);
         foreach ($data as $animeData) {
             $animeTitle = implode(" ", $animeData['name']);
             $slug = $animeData['slug'];
 
             // Buscar por slug o por título
-            $anime = Anime::where('slug', $slug)
-                ->orWhere('title', $animeTitle)
+            $anime = Anime::whereRaw('LOWER(slug) = ?', [mb_strtolower($slug)])
+                ->orWhereRaw('LOWER(title) = ?', [mb_strtolower($animeTitle)])
                 ->first();
 
             if ($anime) {
