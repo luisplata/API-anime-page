@@ -99,10 +99,12 @@ class AnimeController extends Controller
         foreach ($filteredAnimes as $anime) {
             // Limpiar también el slug y título en la base de datos antes de comparar
             $cleanAnimeSlug = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $anime->slug);
-            $animeSlugWords = array_filter(explode(' ', trim($cleanAnimeSlug)));
+            $animeSlugWords = array_map('mb_strtolower', array_filter(explode(' ', trim($cleanAnimeSlug))));
 
             $cleanAnimeTitle = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $anime->title);
-            $animeTitleWords = array_filter(explode(' ', trim($cleanAnimeTitle)));
+            $animeTitleWords = array_map('mb_strtolower', array_filter(explode(' ', trim($cleanAnimeTitle))));
+
+            $queryWords = array_map('mb_strtolower', $queryWords);
 
             // Contar coincidencias en slug y título
             $slugMatches = count(array_intersect($queryWords, $animeSlugWords));
