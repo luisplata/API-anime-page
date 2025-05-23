@@ -7,6 +7,7 @@ use App\Http\Controllers\WebhookController;
 use App\Http\Middleware\VerifyWebhookToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CapReportController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -25,5 +26,14 @@ Route::middleware(VerifyWebhookToken::class)->prefix('webhook')->group(function 
     Route::get('/last-pagination/{type}', [LastPaginationController::class, 'show']);
     Route::post('/send-animes-today', [WebhookController::class, 'sendAnimeToday']);
     Route::post('/send-anime-full', [WebhookController::class, 'sendAnimeFull']);
+
+    Route::post('/cap-report', [CapReportController::class, 'store']);
+    Route::get('/cap-reports', [CapReportController::class, 'index']);
+    Route::get('/cap-reports/episode/{episode_id}', [CapReportController::class, 'byEpisode']);
+    Route::patch('/cap-report/{id}/resolve', [CapReportController::class, 'resolve']);
+
+    Route::get('/', function () {
+        return response()->json(['message' => 'Token válido'], 200);
+    });
 });
 
