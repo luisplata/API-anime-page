@@ -40,8 +40,8 @@ class WebhookController extends Controller
             '*.caps.*.number' => 'required|integer',
             '*.caps.*.link' => 'required|string',
             '*.caps.*.source' => 'required|array',
-            '*.caps.*.source.*.name' => 'required|string',
-            '*.caps.*.source.*.url' => ['required', 'regex:/^https?:\/\/[^\s$.?#].[^\s]*$/i']
+            '*.caps.*.source.*.name' => 'sometimes|required|string',
+            '*.caps.*.source.*.url' => ['sometimes','required', 'regex:/^https?:\/\/[^\s$.?#].[^\s]*$/i']
         ]);
     }
 

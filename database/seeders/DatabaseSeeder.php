@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             AnimeSeeder::class,
             EpisodeSeeder::class,
             EpisodeSourceSeeder::class,
+            CapReportSeeder::class,
         ]);
     }
 }
