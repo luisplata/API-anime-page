@@ -14,13 +14,15 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::get('/animes', [AnimeController::class, 'index']);
-Route::get('/animes/search', [AnimeController::class, 'search']);
-Route::get('/animes/genre', [AnimeController::class, 'genre']);
 Route::get('/anime/{anime}', [AnimeController::class, 'show']);
 Route::get('/episodes', [EpisodeController::class, 'recent']);
 Route::get('/episodes/{anime_slug}-{number}', [EpisodeController::class, 'show'])
     ->where('anime_slug', '[a-zA-Z0-9%\-]+')
     ->where('number', '[0-9]+');
+
+
+Route::get('/animes/search', [AnimeController::class, 'search']);
+Route::get('/animes/genre', [AnimeController::class, 'genre']);
 
 Route::get('/animes/without-alternames', [AnimeController::class, 'withoutAlterNames']);
 Route::get('/animes/without-genres', [AnimeController::class, 'withoutGenres']);
