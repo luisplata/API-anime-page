@@ -18,48 +18,22 @@ class AnimeController extends Controller
     public function show($anime_slug)
     {
         $decodedSlug = urldecode($anime_slug);
-
-        // Limpiamos el slug recibido
         $cleanSlug = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $decodedSlug);
-        $cleanSlug = trim(preg_replace('/\s+/', ' ', $cleanSlug)); // Eliminamos espacios duplicados
+        $cleanSlug = trim(preg_replace('/\s+/', ' ', $cleanSlug));
 
-        // Obtenemos todos los animes con alterNames y géneros
-        $animes = Anime::with(['alterNames', 'genres', 'episodes.sources'])->get();
+        $anime = Anime::with(['alterNames', 'genres', 'episodes.sources'])
+            ->whereRaw('LOWER(slug) = ?', [mb_strtolower($cleanSlug)])
+            ->orWhereRaw('LOWER(title) = ?', [mb_strtolower($cleanSlug)])
+            ->orWhereHas('alterNames', function ($q) use ($cleanSlug) {
+                $q->whereRaw('LOWER(name) = ?', [mb_strtolower($cleanSlug)]);
+            })
+            ->first();
 
-        $bestMatch = null;
-
-        foreach ($animes as $anime) {
-            // Limpiamos el slug y el título de la base de datos
-            $dbCleanSlug = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $anime->slug);
-            $dbCleanSlug = trim(preg_replace('/\s+/', ' ', $dbCleanSlug));
-
-            $dbCleanTitle = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $anime->title);
-            $dbCleanTitle = trim(preg_replace('/\s+/', ' ', $dbCleanTitle));
-
-            if (
-                mb_strtolower($cleanSlug) === mb_strtolower($dbCleanSlug) ||
-                mb_strtolower($cleanSlug) === mb_strtolower($dbCleanTitle)
-            ) {
-                $bestMatch = $anime;
-                break;
-            }
-
-            // Buscar coincidencia en alterNames
-            foreach ($anime->alterNames as $alterName) {
-                $dbCleanAlter = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $alterName->name);
-                $dbCleanAlter = trim(preg_replace('/\s+/', ' ', $dbCleanAlter));
-                if (mb_strtolower($cleanSlug) === mb_strtolower($dbCleanAlter)) {
-                    $bestMatch = $anime;
-                    break 2; // Salir de ambos foreach
-                }
-            }
-        }
-
-        if (!$bestMatch) {
+        if (!$anime) {
             return response()->json($this->emptyAnimeResponse(), 404);
         }
 
-        return $bestMatch;
+        return $anime;
     }
 
     /**
