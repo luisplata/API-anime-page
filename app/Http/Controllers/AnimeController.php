@@ -23,19 +23,35 @@ class AnimeController extends Controller
         $cleanSlug = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $decodedSlug);
         $cleanSlug = trim(preg_replace('/\s+/', ' ', $cleanSlug)); // Eliminamos espacios duplicados
 
-        // Obtenemos todos los animes
-        $animes = Anime::all();
+        // Obtenemos todos los animes con alterNames y géneros
+        $animes = Anime::with(['alterNames', 'genres', 'episodes.sources'])->get();
 
         $bestMatch = null;
 
         foreach ($animes as $anime) {
-            // Limpiamos el slug de la base de datos
+            // Limpiamos el slug y el título de la base de datos
             $dbCleanSlug = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $anime->slug);
             $dbCleanSlug = trim(preg_replace('/\s+/', ' ', $dbCleanSlug));
 
-            if (strtolower($cleanSlug) === strtolower($dbCleanSlug)) {
+            $dbCleanTitle = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $anime->title);
+            $dbCleanTitle = trim(preg_replace('/\s+/', ' ', $dbCleanTitle));
+
+            if (
+                mb_strtolower($cleanSlug) === mb_strtolower($dbCleanSlug) ||
+                mb_strtolower($cleanSlug) === mb_strtolower($dbCleanTitle)
+            ) {
                 $bestMatch = $anime;
                 break;
+            }
+
+            // Buscar coincidencia en alterNames
+            foreach ($anime->alterNames as $alterName) {
+                $dbCleanAlter = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $alterName->name);
+                $dbCleanAlter = trim(preg_replace('/\s+/', ' ', $dbCleanAlter));
+                if (mb_strtolower($cleanSlug) === mb_strtolower($dbCleanAlter)) {
+                    $bestMatch = $anime;
+                    break 2; // Salir de ambos foreach
+                }
             }
         }
 
@@ -43,7 +59,7 @@ class AnimeController extends Controller
             return response()->json($this->emptyAnimeResponse(), 404);
         }
 
-        return $bestMatch->load(['alterNames', 'genres', 'episodes.sources']);
+        return $bestMatch;
     }
 
     /**
@@ -89,34 +105,47 @@ class AnimeController extends Controller
         $firstWord = $queryWords[0];
         $lastWord = end($queryWords);
 
-        // Filtrar los animes que contienen al menos una coincidencia en el slug o el título
+        // Filtrar los animes que contienen al menos una coincidencia en el slug, el título o los alterNames
         $filteredAnimes = Anime::with(['alterNames', 'genres'])
             ->whereRaw('LOWER(slug) LIKE ?', ['%' . $firstWord . '%'])
             ->orWhereRaw('LOWER(slug) LIKE ?', ['%' . $lastWord . '%'])
             ->orWhereRaw('LOWER(title) LIKE ?', ['%' . $firstWord . '%'])
             ->orWhereRaw('LOWER(title) LIKE ?', ['%' . $lastWord . '%'])
+            ->orWhereHas('alterNames', function ($q) use ($firstWord, $lastWord) {
+                $q->whereRaw('LOWER(name) LIKE ?', ['%' . $firstWord . '%'])
+                    ->orWhereRaw('LOWER(name) LIKE ?', ['%' . $lastWord . '%']);
+            })
             ->get();
 
         // Array para almacenar los resultados con su puntaje
         $rankedResults = [];
 
         foreach ($filteredAnimes as $anime) {
-            // Limpiar también el slug y título en la base de datos antes de comparar
+            // Limpiar y dividir slug y título
             $cleanAnimeSlug = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $anime->slug);
             $animeSlugWords = array_map('mb_strtolower', array_filter(explode(' ', trim($cleanAnimeSlug))));
 
             $cleanAnimeTitle = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $anime->title);
             $animeTitleWords = array_map('mb_strtolower', array_filter(explode(' ', trim($cleanAnimeTitle))));
 
-            // Contar coincidencias en slug y título
+            // Unir todos los alterNames en un solo array de palabras
+            $alterNameWords = [];
+            foreach ($anime->alterNames as $alterName) {
+                $cleanAlter = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $alterName->name);
+                $words = array_map('mb_strtolower', array_filter(explode(' ', trim($cleanAlter))));
+                $alterNameWords = array_merge($alterNameWords, $words);
+            }
+
+            // Contar coincidencias en slug, título y alterNames
             $slugMatches = count(array_intersect($queryWords, $animeSlugWords));
             $titleMatches = count(array_intersect($queryWords, $animeTitleWords));
+            $alterMatches = count(array_intersect($queryWords, $alterNameWords));
 
             // Calcular el total de palabras consideradas para el porcentaje
-            $totalWords = max(count($queryWords), count($animeSlugWords), count($animeTitleWords));
+            $totalWords = max(count($queryWords), count($animeSlugWords), count($animeTitleWords), count($alterNameWords));
 
-            // Calcular el porcentaje de coincidencia basado en slug y título
-            $matchPercentage = $totalWords > 0 ? (($slugMatches + $titleMatches) / $totalWords) : 0;
+            // Calcular el porcentaje de coincidencia basado en slug, título y alterNames
+            $matchPercentage = $totalWords > 0 ? (($slugMatches + $titleMatches + $alterMatches) / $totalWords) : 0;
 
             // Solo agregar si tiene algún nivel de coincidencia
             if ($matchPercentage > 0) {
@@ -148,6 +177,7 @@ class AnimeController extends Controller
 
         return response()->json($paginatedResults);
     }
+
     public function genre(Request $request)
     {
         $query = $request->query('q');
@@ -183,5 +213,42 @@ class AnimeController extends Controller
             ->paginate($perPage);
 
         return response()->json($animes);
+    }
+
+    public function withoutAlterNames()
+    {
+        $anime = Anime::with(['genres'])
+            ->doesntHave('alterNames')
+            ->first();
+
+        if (!$anime) {
+            return response()->json(['message' => 'No anime found without alterNames'], 404);
+        }
+
+        return response()->json($anime);
+    }
+
+    public function withoutGenres()
+    {
+        $anime = Anime::with(['alterNames'])
+            ->doesntHave('genres')
+            ->first();
+
+        if (!$anime) {
+            return response()->json(['message' => 'No anime found without genres'], 404);
+        }
+
+        return response()->json($anime);
+    }
+
+    public function random()
+    {
+        $anime = Anime::with(['alterNames', 'genres'])->inRandomOrder()->first();
+
+        if (!$anime) {
+            return response()->json(['message' => 'No anime found'], 404);
+        }
+
+        return response()->json($anime);
     }
 }
