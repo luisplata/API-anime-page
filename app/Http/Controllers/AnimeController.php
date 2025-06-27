@@ -12,7 +12,7 @@ class AnimeController extends Controller
 {
     public function index()
     {
-        return Anime::orderBy('created_at', 'desc')->paginate(20);
+        return Anime::with(['alterNames', 'genres'])->orderBy('created_at', 'desc')->paginate(20);
     }
 
     public function show($anime_slug)
@@ -43,7 +43,7 @@ class AnimeController extends Controller
             return response()->json($this->emptyAnimeResponse(), 404);
         }
 
-        return $bestMatch->load('episodes.sources');
+        return $bestMatch->load(['alterNames', 'genres', 'episodes.sources']);
     }
 
     /**
@@ -90,7 +90,8 @@ class AnimeController extends Controller
         $lastWord = end($queryWords);
 
         // Filtrar los animes que contienen al menos una coincidencia en el slug o el título
-        $filteredAnimes = Anime::whereRaw('LOWER(slug) LIKE ?', ['%' . $firstWord . '%'])
+        $filteredAnimes = Anime::with(['alterNames', 'genres'])
+            ->whereRaw('LOWER(slug) LIKE ?', ['%' . $firstWord . '%'])
             ->orWhereRaw('LOWER(slug) LIKE ?', ['%' . $lastWord . '%'])
             ->orWhereRaw('LOWER(title) LIKE ?', ['%' . $firstWord . '%'])
             ->orWhereRaw('LOWER(title) LIKE ?', ['%' . $lastWord . '%'])

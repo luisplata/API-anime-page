@@ -20,4 +20,14 @@ class Anime extends Model
     {
         return 'slug';
     }
+
+    public function alterNames()
+    {
+        return $this->hasMany(AnimeAlterName::class);
+    }
+
+    public function genres()
+    {
+        return $this->hasMany(AnimeGenre::class);
+    }
 }
