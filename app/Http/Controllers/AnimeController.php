@@ -18,14 +18,18 @@ class AnimeController extends Controller
     public function show($anime_slug)
     {
         $decodedSlug = urldecode($anime_slug);
+
+        // Limpiar el slug recibido (igual que antes)
         $cleanSlug = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $decodedSlug);
         $cleanSlug = trim(preg_replace('/\s+/', ' ', $cleanSlug));
+        $cleanSlugLower = mb_strtolower($cleanSlug);
 
+        // Buscar por slug, título o alterName (solo reemplazando guiones y guiones bajos por espacio)
         $anime = Anime::with(['alterNames', 'genres', 'episodes.sources'])
-            ->whereRaw('LOWER(slug) = ?', [mb_strtolower($cleanSlug)])
-            ->orWhereRaw('LOWER(title) = ?', [mb_strtolower($cleanSlug)])
-            ->orWhereHas('alterNames', function ($q) use ($cleanSlug) {
-                $q->whereRaw('LOWER(name) = ?', [mb_strtolower($cleanSlug)]);
+            ->whereRaw("TRIM(LOWER(REPLACE(REPLACE(slug, '-', ' '), '_', ' '))) = ?", [$cleanSlugLower])
+            ->orWhereRaw("TRIM(LOWER(REPLACE(REPLACE(title, '-', ' '), '_', ' '))) = ?", [$cleanSlugLower])
+            ->orWhereHas('alterNames', function ($q) use ($cleanSlugLower) {
+                $q->whereRaw("TRIM(LOWER(REPLACE(REPLACE(name, '-', ' '), '_', ' '))) = ?", [$cleanSlugLower]);
             })
             ->first();
 
