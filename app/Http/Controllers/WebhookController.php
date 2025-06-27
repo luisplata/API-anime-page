@@ -35,13 +35,15 @@ class WebhookController extends Controller
             '*.slug' => 'required|string',
             '*.description' => 'nullable|string',
             '*.image' => 'nullable|url',
+            '*.alterNames' => 'nullable|array',
+            '*.genres' => 'nullable|array',
             '*.caps' => 'required|array',
             '*.caps.*.title' => 'required|string',
             '*.caps.*.number' => 'required|integer',
             '*.caps.*.link' => 'required|string',
             '*.caps.*.source' => 'nullable|array',
             '*.caps.*.source.*.name' => 'sometimes|required|string',
-            '*.caps.*.source.*.url' => ['sometimes','required', 'regex:/^https?:\/\/[^\s$.?#].[^\s]*$/i']
+            '*.caps.*.source.*.url' => ['sometimes', 'required', 'regex:/^https?:\/\/[^\s$.?#].[^\s]*$/i']
         ]);
     }
 
@@ -51,6 +53,9 @@ class WebhookController extends Controller
         foreach ($data as $animeData) {
             $animeTitle = implode(" ", $animeData['name']);
             $slug = $animeData['slug'];
+
+            $laterNames = $animeData['alterNames'] ?? [];
+            $genres = $animeData['genres'] ?? [];
 
             // Buscar por slug o por título
             $anime = Anime::whereRaw('LOWER(slug) = ?', [mb_strtolower($slug)])
@@ -73,6 +78,16 @@ class WebhookController extends Controller
                     'description' => $animeData['description'],
                     'image' => $animeData['image']
                 ]);
+            }
+
+            $anime->alterNames()->delete();
+            foreach ($laterNames as $altName) {
+                $anime->alterNames()->create(['name' => $altName]);
+            }
+
+            $anime->genres()->delete();
+            foreach ($genres as $genre) {
+                $anime->genres()->create(['genre' => $genre]);
             }
 
             // Si la imagen actual es vacía o viene de 'covers', la actualizamos
