@@ -22,6 +22,10 @@ Route::get('/episodes/{anime_slug}-{number}', [EpisodeController::class, 'show']
     ->where('anime_slug', '[a-zA-Z0-9%\-]+')
     ->where('number', '[0-9]+');
 
+Route::get('/animes/without-alternames', [AnimeController::class, 'withoutAlterNames']);
+Route::get('/animes/without-genres', [AnimeController::class, 'withoutGenres']);
+Route::get('/animes/random', [AnimeController::class, 'random']);
+
 Route::middleware(VerifyWebhookToken::class)->prefix('webhook')->group(function () {
     Route::post('/last-pagination', [LastPaginationController::class, 'store']);
     Route::get('/last-pagination/{type}', [LastPaginationController::class, 'show']);
