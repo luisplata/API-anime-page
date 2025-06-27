@@ -169,4 +169,55 @@ class WebhookController extends Controller
             abort(401, 'Unauthorized');
         }
     }
+
+
+    public function updateAnimeGenres(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'required|exists:animes,id',
+            'genres' => 'required|array',
+            'genres.*' => 'string|max:100'
+        ]);
+
+        $anime = Anime::findOrFail($validated['id']);
+
+        // Elimina los géneros actuales
+        $anime->genres()->delete();
+
+        // Inserta los nuevos géneros
+        foreach ($validated['genres'] as $genre) {
+            $anime->genres()->create(['genre' => $genre]);
+        }
+
+        return response()->json([
+            'message' => 'Géneros actualizados correctamente',
+            'anime_id' => $anime->id,
+            'genres' => $anime->genres()->pluck('genre')
+        ]);
+    }
+
+    public function updateAnimeAlterNames(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'required|exists:animes,id',
+            'alter_names' => 'required|array',
+            'alter_names.*' => 'string|max:255'
+        ]);
+
+        $anime = \App\Models\Anime::findOrFail($validated['id']);
+
+        // Elimina los nombres alternativos actuales
+        $anime->alterNames()->delete();
+
+        // Inserta los nuevos nombres alternativos
+        foreach ($validated['alter_names'] as $altName) {
+            $anime->alterNames()->create(['name' => $altName]);
+        }
+
+        return response()->json([
+            'message' => 'Nombres alternativos actualizados correctamente',
+            'anime_id' => $anime->id,
+            'alter_names' => $anime->alterNames()->pluck('name')
+        ]);
+    }
 }
