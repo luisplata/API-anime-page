@@ -148,4 +148,40 @@ class AnimeController extends Controller
 
         return response()->json($paginatedResults);
     }
+    public function genre(Request $request)
+    {
+        $query = $request->query('q');
+        $perPage = $request->query('per_page', 20); // Default to 20 items per page
+
+        if (!$query) {
+            return response()->json(['error' => 'Query parameter "q" is required'], 400);
+        }
+
+        // Limpiar y pasar a minúsculas la query
+        $decodedQuery = urldecode($query);
+        $cleanQuery = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $decodedQuery);
+        $genreQuery = mb_strtolower(trim($cleanQuery));
+
+        if (empty($genreQuery)) {
+            return response()->json([], 200);
+        }
+
+        // Buscar los géneros que coincidan con la query
+        $animeIds = \App\Models\AnimeGenre::whereRaw('LOWER(genre) LIKE ?', ['%' . $genreQuery . '%'])
+            ->pluck('anime_id')
+            ->unique()
+            ->toArray();
+
+        if (empty($animeIds)) {
+            return response()->json([], 200);
+        }
+
+        // Obtener los animes asociados a esos géneros, con relaciones
+        $animes = Anime::with(['alterNames', 'genres'])
+            ->whereIn('id', $animeIds)
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        return response()->json($animes);
+    }
 }
