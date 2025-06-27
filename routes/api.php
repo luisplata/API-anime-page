@@ -39,6 +39,9 @@ Route::middleware(VerifyWebhookToken::class)->prefix('webhook')->group(function 
     Route::get('/cap-reports/episode/{episode_id}', [CapReportController::class, 'byEpisode']);
     Route::patch('/cap-report/{id}/resolve', [CapReportController::class, 'resolve']);
 
+    Route::post('/update-anime-genres', [WebhookController::class, 'updateAnimeGenres']);
+    Route::post('/update-anime-alternames', [WebhookController::class, 'updateAnimeAlterNames']);
+
     Route::get('/', function () {
         return response()->json(['message' => 'Token válido'], 200);
     });
