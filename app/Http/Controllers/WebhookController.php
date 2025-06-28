@@ -175,8 +175,8 @@ class WebhookController extends Controller
     {
         $validated = $request->validate([
             'id' => 'required|exists:animes,id',
-            'genres' => 'required|array',
-            'genres.*' => 'string|max:100'
+            'genres' => 'nullable|array',
+            'genres.*' => 'sometimes|string|max:100'
         ]);
 
         $anime = Anime::findOrFail($validated['id']);
@@ -200,8 +200,8 @@ class WebhookController extends Controller
     {
         $validated = $request->validate([
             'id' => 'required|exists:animes,id',
-            'alter_names' => 'required|array',
-            'alter_names.*' => 'string|max:255'
+            'alter_names' => 'nullable|array',
+            'alter_names.*' => 'sometimes|string|max:255'
         ]);
 
         $anime = \App\Models\Anime::findOrFail($validated['id']);
