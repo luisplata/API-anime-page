@@ -22,6 +22,7 @@ Route::get('/episodes/{anime_slug}-{number}', [EpisodeController::class, 'show']
 
 
 Route::get('/animes/search', [AnimeController::class, 'search']);
+Route::get('/animes/search_specific', [AnimeController::class, 'search_specific']);
 Route::get('/animes/genre', [AnimeController::class, 'genre']);
 
 Route::get('/animes/without-alternames', [AnimeController::class, 'withoutAlterNames']);

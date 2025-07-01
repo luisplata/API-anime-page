@@ -156,6 +156,33 @@ class AnimeController extends Controller
         return response()->json($paginatedResults);
     }
 
+    public function search_specific(Request $request)
+    {
+        $query = $request->query('q');
+        $perPage = $request->query('per_page', 20); // Default to 20 items per page
+
+        if (!$query) {
+            return response()->json(['error' => 'Query parameter "q" is required'], 400);
+        }
+
+        // Limpiar la query
+        $decodedQuery = urldecode($query);
+        $cleanQuery = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $decodedQuery);
+        $cleanQuery = trim(preg_replace('/\s+/', ' ', $cleanQuery));
+        $cleanQueryLower = mb_strtolower($cleanQuery);
+
+        // Buscar coincidencia literal en slug, título o alterNames
+        $animes = Anime::with(['alterNames', 'genres'])
+            ->whereRaw("TRIM(LOWER(REPLACE(REPLACE(slug, '-', ' '), '_', ' '))) = ?", [$cleanQueryLower])
+            ->orWhereRaw("TRIM(LOWER(REPLACE(REPLACE(title, '-', ' '), '_', ' '))) = ?", [$cleanQueryLower])
+            ->orWhereHas('alterNames', function ($q) use ($cleanQueryLower) {
+                $q->whereRaw("TRIM(LOWER(REPLACE(REPLACE(name, '-', ' '), '_', ' '))) = ?", [$cleanQueryLower]);
+            })
+            ->paginate($perPage);
+
+        return response()->json($animes);
+    }
+
     public function genre(Request $request)
     {
         $query = $request->query('q');
