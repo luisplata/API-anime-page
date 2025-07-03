@@ -182,7 +182,7 @@ class WebhookController extends Controller
         $anime = Anime::findOrFail($validated['id']);
 
         // Elimina los géneros actuales
-        $anime->genres()->delete();
+        //$anime->genres()->delete();
 
         // Inserta los nuevos géneros
         foreach ($validated['genres'] as $genre) {
@@ -204,10 +204,10 @@ class WebhookController extends Controller
             'alter_names.*' => 'sometimes|string|max:255'
         ]);
 
-        $anime = \App\Models\Anime::findOrFail($validated['id']);
+        $anime = Anime::findOrFail($validated['id']);
 
         // Elimina los nombres alternativos actuales
-        $anime->alterNames()->delete();
+        //$anime->alterNames()->delete();
 
         // Inserta los nuevos nombres alternativos
         foreach ($validated['alter_names'] as $altName) {
