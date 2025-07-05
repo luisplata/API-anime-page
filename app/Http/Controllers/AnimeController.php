@@ -19,12 +19,40 @@ class AnimeController extends Controller
     {
         $decodedSlug = urldecode($anime_slug);
 
-        // Limpiar el slug recibido (igual que antes)
+        // 1. Buscar por slug exacto (sin limpiar)
+        $anime = Anime::with(['alterNames', 'genres', 'episodes.sources'])
+            ->where('slug', $decodedSlug)
+            ->first();
+
+        if ($anime) {
+            return $anime;
+        }
+
+        // 2. Buscar por título exacto (sin limpiar)
+        $anime = Anime::with(['alterNames', 'genres', 'episodes.sources'])
+            ->where('title', $decodedSlug)
+            ->first();
+
+        if ($anime) {
+            return $anime;
+        }
+
+        // 3. Buscar por alterName exacto (sin limpiar)
+        $anime = Anime::with(['alterNames', 'genres', 'episodes.sources'])
+            ->whereHas('alterNames', function ($q) use ($decodedSlug) {
+                $q->where('name', $decodedSlug);
+            })
+            ->first();
+
+        if ($anime) {
+            return $anime;
+        }
+
+        // 4. Si no hay coincidencia exacta, intenta con la versión "limpia" (opcional)
         $cleanSlug = preg_replace('/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ]+/u', ' ', $decodedSlug);
         $cleanSlug = trim(preg_replace('/\s+/', ' ', $cleanSlug));
         $cleanSlugLower = mb_strtolower($cleanSlug);
 
-        // Buscar por slug, título o alterName (solo reemplazando guiones y guiones bajos por espacio)
         $anime = Anime::with(['alterNames', 'genres', 'episodes.sources'])
             ->whereRaw("TRIM(LOWER(REPLACE(REPLACE(slug, '-', ' '), '_', ' '))) = ?", [$cleanSlugLower])
             ->orWhereRaw("TRIM(LOWER(REPLACE(REPLACE(title, '-', ' '), '_', ' '))) = ?", [$cleanSlugLower])
@@ -33,11 +61,12 @@ class AnimeController extends Controller
             })
             ->first();
 
-        if (!$anime) {
-            return response()->json($this->emptyAnimeResponse(), 404);
+        if ($anime) {
+            return $anime;
         }
 
-        return $anime;
+        // 5. Si no hay coincidencia, retorna vacío
+        return response()->json($this->emptyAnimeResponse(), 404);
     }
 
     /**
