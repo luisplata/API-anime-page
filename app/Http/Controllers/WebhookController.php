@@ -9,9 +9,60 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use App\Models\AnimeCover;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class WebhookController extends Controller
 {
+
+    public function uploadCover(Request $request)
+    {
+        $this->checkToken($request);
+
+        // Validar que venga el ID del anime
+        if (!$request->has('anime_id')) {
+            return response()->json(['error' => 'anime_id is required'], 400);
+        }
+
+        $animeId = $request->input('anime_id');
+
+        // Validar que venga el archivo 'cover'
+        if (!$request->hasFile('cover')) {
+            return response()->json(['error' => 'No cover image provided'], 400);
+        }
+
+        $cover = $request->file('cover');
+
+        // Validar formato del archivo
+        if (!$cover->isValid() || !in_array($cover->getClientOriginalExtension(), ['jpg', 'jpeg', 'png'])) {
+            return response()->json(['error' => 'Invalid cover image format'], 400);
+        }
+
+        // Crear nombre de archivo único
+        $filename = Str::random(20) . '.' . $cover->getClientOriginalExtension();
+
+        $path = $cover->storeAs('anime_covers', $filename, 'public');
+        $hash = hash_file('sha256', storage_path('app/public/anime_covers/' . $filename));
+
+        // Obtener URL pública
+        $publicUrl = Storage::url('anime_covers/' . $filename);
+
+        // Guardar en base de datos
+        $coverRecord = AnimeCover::create([
+            'anime_id' => $animeId,
+            'cover_url' => $publicUrl,
+            'path' => $path,
+            'filename' => $filename,
+            'hash' => $hash,
+        ]);
+
+        return response()->json([
+            'message' => 'Cover image uploaded successfully',
+            'cover' => $coverRecord
+        ], 201);
+    }
+
     private function parseStringToBool($string)
     {
         $trueValues = ['true', '1', 'yes', 'on'];

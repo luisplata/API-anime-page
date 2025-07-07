@@ -42,6 +42,7 @@ Route::middleware(VerifyWebhookToken::class)->prefix('webhook')->group(function 
 
     Route::post('/update-anime-genres', [WebhookController::class, 'updateAnimeGenres']);
     Route::post('/update-anime-alternames', [WebhookController::class, 'updateAnimeAlterNames']);
+    Route::post('/upload-cover', [WebhookController::class, 'uploadCover']);
 
     Route::get('/', function () {
         return response()->json(['message' => 'Token válido'], 200);
